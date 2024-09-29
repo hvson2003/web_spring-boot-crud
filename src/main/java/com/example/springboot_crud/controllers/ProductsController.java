@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.io.InputStream;
 import java.nio.file.*;
 
@@ -32,9 +36,20 @@ public class ProductsController {
     private ProductsRepository repo;
 
     @GetMapping({"", "/"})
-    public String showProductList(Model model) {
-        List<Product> products = repo.findAll(Sort.by(Sort.Direction.DESC, "id"));
-        model.addAttribute("products", products);
+    public String showProductList(
+            Model model,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        int adjustedPage = page - 1 < 0 ? 0 : page - 1;
+
+        Pageable pageable = PageRequest.of(adjustedPage, size);
+        Page<Product> productPage = repo.findAll(pageable);
+
+        model.addAttribute("products", productPage.getContent());
+        model.addAttribute("currentPage", adjustedPage);
+        model.addAttribute("totalPages", productPage.getTotalPages());
+
         return "products/index";
     }
 
